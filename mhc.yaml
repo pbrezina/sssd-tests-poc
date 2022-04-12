@@ -1,0 +1,17 @@
+root_password: 'Secret123'
+domains:
+- name: tier0.tests
+  type: sssd
+  hosts:
+  - name: client
+    external_hostname: client.test
+    role: client
+  - name: ldap
+    external_hostname: master.ldap.test
+    role: ldap
+  - name: ipa
+    external_hostname: master.ipa.test
+    role: ipa
+  - name: ad
+    external_hostname: dc.samba.test
+    role: ad
