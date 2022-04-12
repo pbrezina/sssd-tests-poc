@@ -1,0 +1,4 @@
+paramiko
+pytest
+pytest_multihost
+PyYAML
