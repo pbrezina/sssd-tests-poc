@@ -1,0 +1,18 @@
+version: 2
+sphinx:
+  configuration: docs/conf.py
+python:
+  install:
+  - requirements: requirements.txt
+  - requirements: docs/requirements.txt
+build:
+  os: ubuntu-20.04
+  apt_packages:
+  - libldap2-dev
+  - libsasl2-dev
+  - libssl-dev
+  - python3-dev
+  tools:
+    python: '3.10'
+formats: []
+
