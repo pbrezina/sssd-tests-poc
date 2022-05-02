@@ -6,15 +6,15 @@ import textwrap
 import pytest
 import yaml
 
-from .. import Topology
 from .itemdata import MultihostItemData
+from .config import MultihostConfig
 
 
 class MultihostPlugin(object):
     def __init__(self, config: pytest.Config) -> None:
-        self.logger = self._create_logger(config.option.verbose > 2)
-        self.topology = None
-        self.exact_topology = False
+        self.logger: logging.Logger = self._create_logger(config.option.verbose > 2)
+        self.multihost: MultihostConfig = None
+        self.exact_topology: bool = False
 
     @classmethod
     def GetLogger(cls) -> logging.Logger:
@@ -42,12 +42,10 @@ class MultihostPlugin(object):
             return
 
         self.exact_topology = session.config.getoption('exact_topology')
-        self.topology = Topology.FromMultihostConfig(pytest_multihost.confdict)
+        self.multihost = MultihostConfig.from_dict(pytest_multihost.confdict)
 
         self.logger.info(bold('Multihost configuration:'))
         self.logger.info(textwrap.indent(yaml.dump(pytest_multihost.confdict), '  '))
-        self.logger.info(bold('Detected topology:'))
-        self.logger.info(textwrap.indent(yaml.dump(self.topology.describe()), '  '))
         self.logger.info(bold('Additional settings:'))
         self.logger.info(f'  require exact topology: {self.exact_topology}')
         self.logger.info('')
@@ -60,15 +58,8 @@ class MultihostPlugin(object):
         for item in items:
             item.multihost = MultihostItemData(item)
 
-            if item.multihost.topology is not None:
-                if self.exact_topology:
-                    if item.multihost.topology.topology != self.topology:
-                        deselected.append(item)
-                        continue
-                else:
-                    if not item.multihost.topology.topology <= self.topology:
-                        deselected.append(item)
-                        continue
+            if item.multihost.topology_mark is not None:
+                self.multihost.fulfils(item.multihost.topology_mark.topology, exact=self.exact_topology)
 
             selected.append(item)
 
@@ -79,17 +70,19 @@ class MultihostPlugin(object):
     def pytest_runtest_setup(self, item: pytest.Item) -> None:
         # Fill in parameters that will be set later in pytest_runtest_call hook,
         # otherwise pytest will raise unknown fixture error.
-        if item.multihost.topology is not None:
+        data: MultihostItemData = item.multihost
+        if data.topology_mark is not None:
             item.fixturenames.append('mh')
             spec = inspect.getfullargspec(item.obj)
-            for arg in item.multihost.topology.args:
+            for arg in data.topology_mark.args:
                 if arg in spec.args:
                     item.funcargs[arg] = None
 
     @pytest.hookimpl(tryfirst=True)
     def pytest_runtest_call(self, item: pytest.Item) -> None:
-        if item.multihost.topology is not None:
-            item.multihost.topology.apply(item.funcargs['mh'], item.funcargs)
+        data: MultihostItemData = item.multihost
+        if data.topology_mark is not None:
+            data.topology_mark.apply(item.funcargs['mh'], item.funcargs)
 
 
 def pytest_addoption(parser):

@@ -1,19 +1,18 @@
 from types import SimpleNamespace
 from typing import Union
 
-from pytest_multihost.config import Domain
-from pytest_multihost.plugin import MultihostFixture
-
 from .roles import BaseRole
+from .topology import Topology
+from .config import MultihostConfig
 
 
 class Multihost(object):
-    def __init__(self, multihost_fixture: MultihostFixture) -> None:
-        self.fixture = multihost_fixture
+    def __init__(self, config: MultihostConfig, *, scope: Topology = None) -> None:
+        self.config = config if not scope else config.scope(scope)
         self._hosts = {}
         self._groups = {}
 
-        for domain in self.fixture.config.domains:
+        for domain in self.config.domains:
             setattr(self, domain.type, self._domain_to_namespace(domain))
 
     def _domain_to_namespace(self, domain: Domain) -> SimpleNamespace:

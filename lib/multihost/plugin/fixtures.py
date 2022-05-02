@@ -1,25 +1,12 @@
 import pytest
-from pytest_multihost import make_multihost_fixture
-from pytest_multihost.plugin import MultihostFixture
 
-from .. import Multihost, Topology
-
-
-@pytest.fixture(scope="session")
-def multihost(request: pytest.FixtureRequest) -> MultihostFixture:
-    plugin = request.config.pluginmanager.getplugin('MultihostPlugin')
-    if not plugin:
-        raise ValueError('Multihost plugin was not found')
-
-    topology = Topology.FromMultihostConfig(plugin.confdict)
-
-    yield make_multihost_fixture(
-        request,
-        descriptions=topology.describe(),
-    )
+from .itemdata import MultihostItemData
+from ..config import MultihostConfig
+from ..multihost import Multihost
 
 
 @pytest.fixture(scope='function')
-def mh(multihost: MultihostFixture):
-    with Multihost(multihost) as mh:
+def mh(request: pytest.FixtureRequest, multihost: MultihostConfig):
+    data: MultihostItemData = request.node.multihost
+    with Multihost(multihost, scope=data.topology_mark.topology) as mh:
         yield mh
