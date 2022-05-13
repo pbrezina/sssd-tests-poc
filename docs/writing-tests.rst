@@ -12,8 +12,10 @@ Using the topology marker
 Each test that requires access to hosts defined in multihost configuration must
 be marked with a ``topology`` marker. This marker provides information about the
 topology that is required to run the test and defines fixture mapping between a
-short fixture name and a host from the multihost configuration. The marker is
-used as:
+short fixture name and a host from the multihost configuration (this is
+explained later in `Deep dive into multihost fixtures`_).
+
+The marker is used as:
 
 .. code-block:: python
 
@@ -36,9 +38,10 @@ mapping - we will cover that later.
     specifically at :class:`lib.multihost.plugin.TopologyMark`. It is also worth
     to read the complete documentation of :mod:`lib.multihost` module.
 
-There is number of predefined topologies in :class:`lib.multihost.KnownTopology`
-that can be used directly as the topology marker argument. It is recommended to
-use this instead of providing your own topology unless it is really necessary.
+There is a number of predefined topologies in
+:class:`lib.multihost.KnownTopology` that can be used directly as the topology
+marker argument. It is recommended to use this instead of providing your own
+topology unless it is really necessary.
 
 .. code-block:: python
 

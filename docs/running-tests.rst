@@ -17,10 +17,10 @@ Setting up multihost environment
 ********************************
 
 Even though our tests are run locally with ``pytest``, they actually run
-commands on remote machine to make the setup more flexible and avoid changing
-anything on your host. We will use environment provided by `sssd-ci-containers`_
-in this example, however you can also setup your own machines and provide custom
-multihost configuration.
+commands on remote machines to make the setup more flexible and avoid changing
+anything on your host. We will use the environment provided by
+`sssd-ci-containers`_ in this example, however you can also setup your own
+machines and provide custom multihost configuration.
 
 .. _sssd-ci-containers: https://github.com/SSSD/sssd-ci-containers
 
@@ -32,7 +32,7 @@ The following snippet is enough to get started. It will clone the
 containers. Please, follow instructions at `sssd-ci-containers`_ to get more
 information.
 
-.. code-block: bash
+.. code-block:: bash
 
     git clone https://github.com/SSSD/sssd-ci-containers.git
     cd sssd-ci-containers
