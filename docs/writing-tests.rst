@@ -12,8 +12,10 @@ Using the topology marker
 Each test that requires access to hosts defined in multihost configuration must
 be marked with a ``topology`` marker. This marker provides information about the
 topology that is required to run the test and defines fixture mapping between a
-short fixture name and a host from the multihost configuration. The marker is
-used as:
+short fixture name and a host from the multihost configuration (this is
+explained later in `Deep dive into multihost fixtures`_).
+
+The marker is used as:
 
 .. code-block:: python
 
@@ -36,9 +38,10 @@ mapping - we will cover that later.
     specifically at :class:`lib.multihost.plugin.TopologyMark`. It is also worth
     to read the complete documentation of :mod:`lib.multihost` module.
 
-There is number of predefined topologies in :class:`lib.multihost.KnownTopology`
-that can be used directly as the topology marker argument. It is recommended to
-use this instead of providing your own topology unless it is really necessary.
+There is a number of predefined topologies in
+:class:`lib.multihost.KnownTopology` that can be used directly as the topology
+marker argument. It is recommended to use this instead of providing your own
+topology unless it is really necessary.
 
 .. code-block:: python
 
@@ -100,10 +103,10 @@ that you can use to put it in the code:
 Using the mh fixture
 ====================
 
-The :func:`lib.multihost.plugin.mh` fixture is a fixture that is always
-available to a test that is marked with the topology marker. It provides access
-to domains by type and to hosts by role. Each host object is created as an
-instance of specific :mod:`lib.multihost.roles`.
+The :func:`lib.multihost.plugin.mh` is a fixture that is always available to a
+test that is marked with the topology marker. It provides access to domains by
+type and to hosts by role. Each host object is created as an instance of
+specific :mod:`lib.multihost.roles`.
 
 We can use this fixture to access either group of hosts with
 ``mh.$domain-type.$role`` or individual host with
@@ -122,8 +125,8 @@ hosts from our example topology.
         assert mh.sssd.client[0].role == 'client'
         assert mh.sssd.ldap[0].role == 'ldap'
 
-We can also use advantage of Python type hints to let our editor provide us code
-suggestions.
+We can also take advantage of Python type hints to let our editor provide us
+code suggestions.
 
 .. code-block:: python
 
@@ -268,7 +271,7 @@ Topology parametrization
 
 We can run single test against multiple SSSD providers by topology
 parametrization. This is achieved by assigning multiple topology markers to
-single test.
+a single test.
 
 .. code-block:: python
 
@@ -285,8 +288,8 @@ single test.
         assert True
 
 Now, if we run the test, we can see that it was executed multiple times and each
-time with different topology therefore the ``provider`` points to the expected
-host (``sssd.ldap[0]`` for ldap, ``sssd.ipa[0]`` for ipa etc.).
+time with a different topology. Therefore the ``provider`` points to the
+expected host (``sssd.ldap[0]`` for ldap, ``sssd.ipa[0]`` for ipa etc.).
 
 .. code-block:: console
 
