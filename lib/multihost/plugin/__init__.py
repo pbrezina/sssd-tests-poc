@@ -10,12 +10,14 @@ that can be run using the given multihost configuration are executed.
 New command line options
 ========================
 
+* ``--multihost-log-path``: multihost logs will be printed to this file, use
+  ``/dev/stdout`` if you want to print them to standard output (default: none)
 * ``--exact-topology``: if set only test the require exactly the multihost
-  configuration that was given are run
+  configuration that was given are run (default: false)
 
   .. code-block:: console
 
-      pytest --exact-topology --multihost-config mhc.yaml
+      pytest --exact-topology --multihost-log-path ./test.log --multihost-config mhc.yaml
 
 New markers
 ===========
@@ -24,7 +26,8 @@ New markers
 
   .. code-block:: python
 
-      @pytest.mark.topology(name: str, topology: lib.multihost.topology.Topology, /, *, fixture1=target1, ...)
+      @pytest.mark.topology(name: str, topology:
+      lib.multihost.topology.Topology, /, *, fixture1=target1, ...)
 
 New fixtures
 ============
@@ -35,15 +38,20 @@ New fixtures
 New functionality
 =================
 
-* filter tests using ``@pytest.mark.topology`` and :class:`lib.multihost.plugin.TopologyMark`
-* run only tests which topology (as set by the ``topology`` marker) is satisfied by given multihost configuration
-* dynamically create fixtures required by the test as defined in the ``topology`` marker
+* filter tests using ``@pytest.mark.topology`` and
+  :class:`lib.multihost.plugin.TopologyMark`
+* run only tests which topology (as set by the ``topology`` marker) is satisfied
+  by given multihost configuration
+* dynamically create fixtures required by the test as defined in the
+  ``topology`` marker
 * parametrize tests by topology, each ``topology`` marker creates one test run
 
 .. raw:: html
 
    <hr>
 """
+
+from __future__ import annotations
 
 from .fixtures import mh, multihost
 from .marks import TopologyMark

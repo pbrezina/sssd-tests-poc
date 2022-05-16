@@ -1,7 +1,9 @@
+from __future__ import annotations
+
 import pytest
 
 from lib.multihost import KnownTopology, Multihost, Topology, TopologyDomain
-from lib.multihost.roles import AD, IPA, LDAP, Client, GenericAD, GenericProvider, Samba
+from lib.multihost.roles import AD, IPA, LDAP, Client, GenericADProvider, GenericProvider, Samba
 
 
 @pytest.mark.topology('client', Topology(TopologyDomain('sssd', client=1)))
@@ -54,12 +56,6 @@ def test_any_ad(client: Client, provider: GenericAD):
 @pytest.mark.topology(KnownTopology.AD)
 @pytest.mark.topology(KnownTopology.Samba)
 def test_generic_provider(client: Client, provider: GenericProvider):
-    # provider.add_user(name='my_user', uid=1000, gid=1000)
-    # result = client.id('my_user')
-    # assert result.name == 'my_user'
-    # assert result.uid == 1000
-    # assert result.gid == 1000
-    # assert provider.role == 'ipa'
     assert True
 
 
@@ -69,4 +65,166 @@ def test_generic_provider(client: Client, provider: GenericProvider):
 @pytest.mark.topology(KnownTopology.AD)
 @pytest.mark.topology(KnownTopology.Samba)
 def test_parametrize(client: Client, provider: GenericProvider, test: int):
+    assert test == 1 or test == 2
+
+
+@pytest.mark.topology(
+    'ldap', Topology(TopologyDomain('sssd', client=1, ldap=1)),
+    client='sssd.client[0]', ldap='sssd.ldap[0]'
+)
+def test_ldap_id__explicit_domain(client: Client, ldap: LDAP):
+    ldap.user('user-1').add(uid=10001, gid=10001, password='Secret123')
+
+    client.sssd.import_domain('test', ldap)
+    client.sssd.domain['use_fully_qualified_names'] = 'true'
+    client.sssd.config_apply()
+    client.sssd.start(apply_config=False)
+
+    result = client.tools.id('user-1@test')
+    assert result is not None
+    assert result.user.name == 'user-1@test'
+
+
+@pytest.mark.topology(
+    'ldap', Topology(TopologyDomain('sssd', client=1, ldap=1)), dict(test='sssd.ldap[0]'),
+    client='sssd.client[0]', ldap='sssd.ldap[0]'
+)
+def test_ldap_id__implicit_domain(client: Client, ldap: LDAP):
+    ldap.user('user-1').add(uid=10001, gid=10001, password='Secret123')
+
+    client.sssd.domain['use_fully_qualified_names'] = 'true'
+    client.sssd.start()
+
+    result = client.tools.id('user-1@test')
+    assert result is not None
+    assert result.user.name == 'user-1@test'
+
+
+@pytest.mark.topology(KnownTopology.LDAP)
+def test_ldap_id(client: Client, ldap: LDAP):
+    # Create organizational units
+    ou_users = ldap.ou('users').add()
+    ou_groups = ldap.ou('groups').add()
+
+    # Create user
+    user = ldap.user('user-1', basedn=ou_users).add(uid=10001, gid=10001, password='Secret123')
+
+    # Create group
+    group = ldap.group('group-1', basedn=ou_groups, rfc2307bis=True).add(gid=20001)
+    group.add_member(user)
+
+    client.sssd.domain['ldap_schema'] = 'rfc2307bis'
+    client.sssd.start()
+
+    result = client.tools.id('user-1')
+    assert result is not None
+    assert result.user.name == 'user-1'
+    assert result.user.id == 10001
+    assert result.group.id == 10001
+    assert result.group.name is None
+    assert result.memberof('group-1')
+
+    client.sssd.domain['use_fully_qualified_names'] = 'true'
+    client.sssd.restart()
+
+    result = client.tools.id('user-1')
+    assert result is None
+
+    result = client.tools.id('user-1@test')
+    assert result is not None
+    assert result.user.name == 'user-1@test'
+    assert result.user.id == 10001
+    assert result.group.id == 10001
+    assert result.group.name is None
+    assert result.memberof('group-1@test')
+
+
+@pytest.mark.topology(KnownTopology.IPA)
+def test_ipa_id(client: Client, ipa: IPA):
+    # Create user
+    user = ipa.user('user-1').add(password='Secret123')
+
+    # Create group
+    group = ipa.group('group-1').add()
+    group.add_member(user)
+
+    client.sssd.start()
+
+    result = client.tools.id('user-1')
+    assert result is not None
+    assert result.user.name == 'user-1'
+    assert result.user.id == result.group.id
+    assert result.user.name == result.group.name
+    assert result.memberof('group-1')
+
+    client.sssd.domain['use_fully_qualified_names'] = 'true'
+    client.sssd.restart()
+
+    result = client.tools.id('user-1')
+    assert result is None
+
+    result = client.tools.id('user-1@test')
+    assert result is not None
+    assert result.user.name == 'user-1@test'
+    assert result.user.id == result.group.id
+    assert result.user.name == result.group.name
+    assert result.memberof('group-1@test')
+
+
+@pytest.mark.topology(KnownTopology.LDAP)
+@pytest.mark.topology(KnownTopology.IPA)
+def test_generic_id(client: Client, provider: GenericProvider):
+    # Create user
+    user = provider.user('user-1').add(uid=10001, gid=10001, password='Secret123')
+
+    # Create group
+    group = provider.group('group-1').add(gid=20001)
+    group.add_member(user)
+
+    client.sssd.start()
+
+    result = client.tools.id('user-1')
+    assert result is not None
+    assert result.user.name == 'user-1'
+    assert result.user.id == 10001
+    assert result.group.id == 10001
+    assert result.memberof('group-1')
+
+    client.sssd.domain['use_fully_qualified_names'] = 'true'
+    client.sssd.restart()
+
+    result = client.tools.id('user-1')
+    assert result is None
+
+    result = client.tools.id('user-1@test')
+    assert result is not None
+    assert result.user.name == 'user-1@test'
+    assert result.user.id == 10001
+    assert result.group.id == 10001
+    assert result.memberof('group-1@test')
+
+
+@pytest.mark.topology(KnownTopology.Samba)
+def test_samba_id(client: Client, samba: Samba):
+    user = samba.user('user-1').add(
+        uid=10001, gid=10001, home='/home/test', password='Secret123', gecos='gecos', shell='/bin/sh'
+    )
+    group = samba.group('group-1').add()
+    group.add_member(user)
+
+    user.modify(home='/home/test2')
+    user.modify(home=Samba.Flags.DELETE)
+    # client.sssd.start()
+
+    # result = client.tools.id('user-1')
+    # print(result)
+    assert True
+
+
+@pytest.mark.topology(KnownTopology.AD)
+def test_ad_id(client: Client, ad: AD):
+    u = ad.user('test-user').add()
+    g = ad.group('test').add()
+    g.add_member(u)
+
     assert True

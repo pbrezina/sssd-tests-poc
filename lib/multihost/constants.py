@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from enum import Enum, unique
 from typing import final
 
@@ -24,7 +26,7 @@ class KnownTopology(Enum):
     Client = TopologyMark(
         name='client',
         topology=Topology(TopologyDomain('sssd', client=1)),
-        fixtures=dict(client='sssd.client[0]')
+        fixtures=dict(client='sssd.client[0]'),
     )
     """
     .. topology-mark:: KnownTopology.Client
@@ -33,7 +35,8 @@ class KnownTopology(Enum):
     LDAP = TopologyMark(
         name='ldap',
         topology=Topology(TopologyDomain('sssd', client=1, ldap=1)),
-        fixtures=dict(client='sssd.client[0]', ldap='sssd.ldap[0]', provider='sssd.ldap[0]')
+        domains=dict(test='sssd.ldap[0]'),
+        fixtures=dict(client='sssd.client[0]', ldap='sssd.ldap[0]', provider='sssd.ldap[0]'),
     )
     """
     .. topology-mark:: KnownTopology.LDAP
@@ -42,7 +45,8 @@ class KnownTopology(Enum):
     IPA = TopologyMark(
         name='ipa',
         topology=Topology(TopologyDomain('sssd', client=1, ipa=1)),
-        fixtures=dict(client='sssd.client[0]', ipa='sssd.ipa[0]', provider='sssd.ipa[0]')
+        domains=dict(test='sssd.ipa[0]'),
+        fixtures=dict(client='sssd.client[0]', ipa='sssd.ipa[0]', provider='sssd.ipa[0]'),
     )
     """
     .. topology-mark:: KnownTopology.IPA
@@ -51,7 +55,8 @@ class KnownTopology(Enum):
     AD = TopologyMark(
         name='ad',
         topology=Topology(TopologyDomain('sssd', client=1, ad=1)),
-        fixtures=dict(client='sssd.client[0]', ad='sssd.ad[0]', provider='sssd.ad[0]')
+        domains=dict(test='sssd.ad[0]'),
+        fixtures=dict(client='sssd.client[0]', ad='sssd.ad[0]', provider='sssd.ad[0]'),
     )
     """
     .. topology-mark:: KnownTopology.AD
@@ -60,7 +65,8 @@ class KnownTopology(Enum):
     Samba = TopologyMark(
         name='samba',
         topology=Topology(TopologyDomain('sssd', client=1, samba=1)),
-        fixtures=dict(client='sssd.client[0]', samba='sssd.samba[0]', provider='sssd.samba[0]')
+        domains={'test': 'sssd.samba[0]'},
+        fixtures=dict(client='sssd.client[0]', samba='sssd.samba[0]', provider='sssd.samba[0]'),
     )
     """
     .. topology-mark:: KnownTopology.Samba

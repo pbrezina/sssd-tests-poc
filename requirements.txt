@@ -1,4 +1,5 @@
-paramiko
+jc
 pytest
 pytest_multihost
+python-ldap
 PyYAML

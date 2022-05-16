@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from enum import Enum
 
 import pytest
@@ -13,11 +15,12 @@ class TopologyMark(object):
     * **name**, that is used to identify topology in pytest output
     * **topology** (:class:Topology) that is required to run the test
     * **fixtures** that are available during the test run
+    * **domains** that will be automatically configured on the client
 
     .. code-block:: python
         :caption: Example usage
 
-        @pytest.mark.topology(name, topology, fixture1='path1', fixture2='path2', ...)
+        @pytest.mark.topology(name, topology, domains, fixture1='path1', fixture2='path2', ...)
         def test_fixture_name(fixture1: BaseRole, fixture2: BaseRole, ...):
             assert True
 
@@ -32,7 +35,13 @@ class TopologyMark(object):
         tests/test_basic.py::test_case (topology-name) PASSED
     """
 
-    def __init__(self, name: str, topology: Topology, fixtures: dict[str, str] = None) -> None:
+    def __init__(
+        self,
+        name: str,
+        topology: Topology,
+        fixtures: dict[str, str] = dict(),
+        domains: dict[str, str] = dict()
+    ) -> None:
         """
         :param name: Topology name used in pytest output.
         :type name: str
@@ -40,11 +49,15 @@ class TopologyMark(object):
         :type topology: Topology
         :param fixtures: Dynamically created fixtures available during the test run.
         :type fixtures: dict[str, str], optional
+        :param domains: Automatically created SSSD domains on client host
+        :type domains: dict[str, str], optional
         """
 
         self.name = name
         self.topology = topology
         self.fixtures = fixtures
+        self.domains = domains
+
         self.mapping: dict[str, list[str]] = {}
 
         for fixture, target in self.fixtures.items():
@@ -84,6 +97,7 @@ class TopologyMark(object):
             {
                 'name': 'client',
                 'fixtures': { 'client': 'sssd.client[0]' },
+                'domains': { 'test': 'sssd.ldap[0]' },
                 'topology': [
                     {
                         'type': 'sssd',
@@ -98,6 +112,7 @@ class TopologyMark(object):
         return {
             'name': self.name,
             'fixtures': self.fixtures,
+            'domains': self.domains,
             'topology': self.topology.export(),
         }
 
@@ -112,7 +127,7 @@ class TopologyMark(object):
 
         error = f'{item.parent.nodeid}::{item.originalname}: invalid arguments for @pytest.mark.topology'
 
-        if not mark.args or len(mark.args) > 2:
+        if not mark.args or len(mark.args) > 3:
             raise ValueError(error)
 
         # Constructor for lib.multihost.KnownTopology
@@ -126,12 +141,13 @@ class TopologyMark(object):
             return mark.args[0].value
 
         # Generic constructor.
-        # First two parameters are positional, the rest are keyword arguments.
-        if len(mark.args) != 2:
+        # First three parameters are positional, the rest are keyword arguments.
+        if len(mark.args) != 2 and len(mark.args) != 3:
             raise ValueError(error)
 
         name = mark.args[0]
         topology = mark.args[1]
+        domains = mark.args[2] if len(mark.args) == 3 else {}
         fixtures = mark.kwargs
 
-        return cls(name, topology, fixtures)
+        return cls(name, topology, fixtures, domains)

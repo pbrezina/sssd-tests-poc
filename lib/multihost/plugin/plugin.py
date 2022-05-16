@@ -1,8 +1,9 @@
+from __future__ import annotations
+
 import inspect
 import logging
 import sys
 import textwrap
-from typing import Optional
 
 import pytest
 import yaml
@@ -19,8 +20,8 @@ class MultihostItemData(object):
 
     def __init__(
         self,
-        multihost: Optional[MultihostConfig],
-        topology_mark: Optional[TopologyMark]
+        multihost: MultihostConfig | None,
+        topology_mark: TopologyMark | None
     ) -> None:
         self.multihost = multihost
         self.topology_mark = topology_mark
@@ -37,10 +38,12 @@ class MultihostPlugin(object):
         self.multihost: MultihostConfig = None
         self.topology: Topology = None
         self.exact_topology: bool = config.getoption('exact_topology')
+        self.multihost_log_path: str = config.getoption('multihost_log_path')
 
         pytest_multihost = config.pluginmanager.getplugin('MultihostPlugin')
         if pytest_multihost:
             self.confdict = pytest_multihost.confdict
+            self.confdict['log_path'] = self.multihost_log_path
             self.multihost = MultihostConfig.from_dict(self.confdict)
             self.topology = Topology.FromMultihostConfig(self.confdict)
 
@@ -72,6 +75,7 @@ class MultihostPlugin(object):
         self.logger.info(self._fmt_bold('Detected topology:'))
         self.logger.info(textwrap.indent(yaml.dump(self.topology.export(), sort_keys=False), '  '))
         self.logger.info(self._fmt_bold('Additional settings:'))
+        self.logger.info(f'  multihost log path: {self.multihost_log_path}')
         self.logger.info(f'  require exact topology: {self.exact_topology}')
         self.logger.info('')
 
@@ -210,7 +214,7 @@ class MultihostPlugin(object):
     def _is_multihost_required(self, item: pytest.Item) -> bool:
         return item.get_closest_marker(name='topology') is not None
 
-    def _can_run_test(self, item: pytest.Item, data: Optional[MultihostItemData]) -> bool:
+    def _can_run_test(self, item: pytest.Item, data: MultihostItemData | None) -> bool:
         if data is None:
             return not self._is_multihost_required(item)
 
@@ -249,6 +253,10 @@ def pytest_addoption(parser):
     parser.addoption(
         "--exact-topology", action="store_true",
         help="Test will be deselected if its topology does not match multihost config exactly"
+    )
+
+    parser.addoption(
+        "--multihost-log-path", action="store", help="Path to store multihost logs"
     )
 
 

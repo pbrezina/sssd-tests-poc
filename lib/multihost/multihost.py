@@ -1,10 +1,18 @@
-from types import SimpleNamespace
-from typing import Union
+from __future__ import annotations
 
+from types import SimpleNamespace
+from typing import TYPE_CHECKING
+
+import pytest
 from pytest_multihost.config import Domain
 
 from .config import MultihostConfig
-from .roles import BaseRole
+from .host import BaseHost
+from .roles import BaseRole, get_role_class
+from .topology import Topology, TopologyDomain
+
+if TYPE_CHECKING:
+    from .plugin.plugin import MultihostItemData
 
 
 class Multihost(object):
@@ -45,22 +53,29 @@ class Multihost(object):
             mh.sssd.client[0]  # -> host object, instance of specific role
     """
 
-    def __init__(self, multihost: MultihostConfig) -> None:
+    def __init__(self, request: pytest.FixtureRequest, multihost: MultihostConfig, topology: Topology) -> None:
         """
         :param multihost: Multihost configuration.
         :type multihost: MultihostConfig
         """
 
+        self.data: MultihostItemData = request.node.multihost
+        self.request = request
         self.multihost = multihost
         self._paths = {}
 
         for domain in self.multihost.domains:
-            setattr(self, domain.type, self._domain_to_namespace(domain))
+            if domain.type in topology:
+                setattr(self, domain.type, self._domain_to_namespace(domain, topology.get(domain.type)))
 
-    def _domain_to_namespace(self, domain: Domain) -> SimpleNamespace:
+    def _domain_to_namespace(self, domain: Domain, topology_domain: TopologyDomain) -> SimpleNamespace:
         ns = SimpleNamespace()
         for role in domain.roles:
-            hosts = [BaseRole(role, host) for host in domain.hosts_by_role(role)]
+            if role not in topology_domain:
+                continue
+
+            count = topology_domain.get(role)
+            hosts = [self._host_to_role(host) for host in domain.hosts_by_role(role)[:count]]
 
             self._paths[f'{domain.type}.{role}'] = hosts
             for index, host in enumerate(hosts):
@@ -70,7 +85,11 @@ class Multihost(object):
 
         return ns
 
-    def _lookup(self, path: str) -> Union[BaseRole, list[BaseRole]]:
+    def _host_to_role(self, host: BaseHost):
+        cls = get_role_class(host.role)
+        return cls(self, host.role, host)
+
+    def _lookup(self, path: str) -> BaseRole | list[BaseRole]:
         """
         Lookup host by path. The path format is ``$domain.$role``
         or ``$domain.$role[$index]``
@@ -79,7 +98,7 @@ class Multihost(object):
         :type path: str
         :raises LookupError: If host is not found.
         :return: The role object if index was given, list of role objects otherwise.
-        :rtype: Union[BaseRole, list[BaseRole]]
+        :rtype: BaseRole | list[BaseRole]
         """
 
         if path not in self._paths:
@@ -87,17 +106,35 @@ class Multihost(object):
 
         return self._paths[path]
 
+    def _setup(self) -> None:
+        """
+        Setup multihost. A setup method is called on each host to initialize the
+        host to expected state.
+        """
+        for host in self._paths.values():
+            if isinstance(host, BaseRole):
+                host.setup()
+
     def _teardown(self) -> None:
         """
         Teardown multihost. The purpose of this method is to revert any changes
         that were made during a test run. It is automatically called when the
         test is finished.
         """
+
+        errors = []
         for host in reversed(self._paths.values()):
             if isinstance(host, BaseRole):
-                host.teardown()
+                try:
+                    host.teardown()
+                except Exception as e:
+                    errors.append(e)
+
+        if errors:
+            raise Exception(errors)
 
     def __enter__(self) -> 'Multihost':
+        self._setup()
         return self
 
     def __exit__(self, exception_type, exception_value, traceback) -> None:

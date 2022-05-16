@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import pytest
 
 from ..config import MultihostConfig
@@ -50,5 +52,5 @@ def mh(request: pytest.FixtureRequest) -> Multihost:
         nodeid = f'{request.node.parent.nodeid}::{request.node.originalname}'
         raise ValueError(f'{nodeid}: mh fixture requested but no multihost configuration was provided')
 
-    with Multihost(data.multihost) as mh:
+    with Multihost(request, data.multihost, data.topology_mark.topology) as mh:
         yield mh

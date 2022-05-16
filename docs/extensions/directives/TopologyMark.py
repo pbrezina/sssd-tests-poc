@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import yaml
 from sphinx.directives.code import CodeBlock
 
