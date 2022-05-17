@@ -103,6 +103,13 @@ that you can use to put it in the code:
 Using the mh fixture
 ====================
 
+.. warning::
+
+    Creating custom topologies and fixture mapping is not recommended and should
+    be used only when it is really needed. See the following section `Using
+    known topologies`_ to learn how to use predefined topologies in order to
+    shorten the code and provide naming consistency across all tests.
+
 The :func:`lib.multihost.plugin.mh` is a fixture that is always available to a
 test that is marked with the topology marker. It provides access to domains by
 type and to hosts by role. Each host object is created as an instance of
@@ -225,13 +232,6 @@ it.
             ldap='sssd.ldap[0]', provider='sssd.ldap[0]'
         )
 
-.. warning::
-
-    Creating custom topologies and fixture mapping is not recommended and should
-    be used only when it is really needed. See the following section `Using
-    known topologies`_ to learn how to use predefined topologies in order to
-    shorten the code and provide naming consistency across all tests.
-
 Using known topologies
 ======================
 
@@ -290,6 +290,11 @@ a single test.
 Now, if we run the test, we can see that it was executed multiple times and each
 time with a different topology. Therefore the ``provider`` points to the
 expected host (``sssd.ldap[0]`` for ldap, ``sssd.ipa[0]`` for ipa etc.).
+
+.. note::
+
+    It is best practice to mark as many topologies as possible, triggering
+    multiple providers, when the test case allows it.
 
 .. code-block:: console
 
