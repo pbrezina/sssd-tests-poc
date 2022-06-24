@@ -14,10 +14,24 @@ if TYPE_CHECKING:
 class Client(LinuxRole):
     def __init__(self, mh: Multihost, role: str, host: BaseHost) -> None:
         super().__init__(mh, role, host)
-        self.sssd = HostSSSD(host, self.fs, self.svc, load_config=False)
-        self.tools = HostTools(host)
+        self.sssd: HostSSSD = HostSSSD(host, self.fs, self.svc, load_config=False)
+        """
+        SSSD management.
+        """
+
+        self.tools: HostTools = HostTools(host)
+        """
+        Standard tools interface.
+        """
 
     def setup(self) -> None:
+        """
+        Setup client host:
+
+        #. stop sssd
+        #. clear sssd cache, logs and configuration
+        #. import implicit domains from topology marker
+        """
         super().setup()
         self.sssd.stop()
         self.sssd.clear(db=True, logs=True, config=True)

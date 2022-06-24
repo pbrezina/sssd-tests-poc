@@ -10,9 +10,7 @@ class HostFileSystem(MultihostUtility):
     """
     Perform file system operations on remote host.
 
-    All changes are reverted when :func:`teardown` method is called. Teardown is
-    called automatically if instance of this class is a member of
-    :class:`lib.multihost.roles.BaseRole` object.
+    All changes are automatically reverted when a test is finished.
     """
 
     def __init__(self, host: BaseHost) -> None:
@@ -20,7 +18,6 @@ class HostFileSystem(MultihostUtility):
         :param host: Remote host instance.
         :type host: BaseHost
         """
-
         super().__init__(host)
         self.__rollback: list[str] = []
 
@@ -30,7 +27,6 @@ class HostFileSystem(MultihostUtility):
 
         :meta private:
         """
-
         cmd = '\n'.join(reversed(self.__rollback))
         if cmd:
             self.host.exec(cmd)
@@ -51,7 +47,6 @@ class HostFileSystem(MultihostUtility):
         :type group: str, optional
         :raises OSError: If directory can not be created.
         """
-
         cmd = f'''
         set -x
 
@@ -75,7 +70,6 @@ class HostFileSystem(MultihostUtility):
         :return: File contents.
         :rtype: str
         """
-
         result = self.host.exec(['cat', path], log_stdout=False, raise_on_error=False)
         if result.rc != 0:
             raise OSError(result.stderr)
@@ -109,7 +103,6 @@ class HostFileSystem(MultihostUtility):
         :type dedent: bool, optional
         :raises OSError: If file can not be written.
         """
-
         if dedent:
             contents = textwrap.dedent(contents).strip()
 

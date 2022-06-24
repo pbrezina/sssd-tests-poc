@@ -25,7 +25,6 @@ class HostService(MultihostUtility):
         :return: Remote command result.
         :rtype: RemoteCommandResult
         """
-
         return self.__systemctl('start', service, raise_on_error, wait)
 
     def stop(self, service: str, raise_on_error: bool = True, wait: bool = True) -> RemoteCommandResult:
@@ -44,7 +43,6 @@ class HostService(MultihostUtility):
         :return: Remote command result.
         :rtype: RemoteCommandResult
         """
-
         return self.__systemctl('stop', service, raise_on_error, wait)
 
     def restart(self, service: str, raise_on_error: bool = True, wait: bool = True) -> RemoteCommandResult:
@@ -63,7 +61,6 @@ class HostService(MultihostUtility):
         :return: Remote command result.
         :rtype: RemoteCommandResult
         """
-
         return self.__systemctl('restart', service, raise_on_error, wait)
 
     def reload(self, service: str, raise_on_error: bool = True, wait: bool = True) -> RemoteCommandResult:
@@ -82,7 +79,6 @@ class HostService(MultihostUtility):
         :return: Remote command result.
         :rtype: RemoteCommandResult
         """
-
         return self.__systemctl('reload', service, raise_on_error, wait)
 
     def status(self, service: str, raise_on_error: bool = False, wait: bool = True) -> RemoteCommandResult:
@@ -113,7 +109,6 @@ class HostService(MultihostUtility):
         :return: Remote command result.
         :rtype: RemoteCommandResult
         """
-
         return self.host.exec(['systemctl', 'daemon-reload'], raise_on_error=raise_on_error, wait=wait)
 
     def __systemctl(self, command: str, service: str, raise_on_error: bool, wait: bool) -> RemoteCommandResult:

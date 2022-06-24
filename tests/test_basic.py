@@ -47,7 +47,7 @@ def test_samba(client: Client, samba: Samba):
 
 @pytest.mark.topology(KnownTopology.AD)
 @pytest.mark.topology(KnownTopology.Samba)
-def test_any_ad(client: Client, provider: GenericAD):
+def test_any_ad(client: Client, provider: GenericADProvider):
     assert True
 
 

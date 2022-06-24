@@ -5,11 +5,11 @@ from functools import partial
 from io import StringIO
 from typing import TYPE_CHECKING
 
+from ..host import BaseHost, ProviderHost
 from .base import MultihostUtility
 
 if TYPE_CHECKING:
     from ..command import RemoteCommandResult
-    from ..host import BaseHost, ProviderHost
     from ..roles import BaseRole
     from .fs import HostFileSystem
     from .service import HostService
@@ -19,9 +19,7 @@ class HostSSSD(MultihostUtility):
     """
     Manage SSSD on remote host.
 
-    All changes are reverted when :func:`teardown` method is called. Teardown is
-    called automatically if instance of this class is a member of
-    :class:`lib.multihost.roles.BaseRole` object.
+    All changes are automatically reverted when a test is finished.
     """
 
     def __init__(self, host: BaseHost, fs: HostFileSystem, svc: HostService, load_config: bool = False) -> None:
@@ -82,9 +80,16 @@ class HostSSSD(MultihostUtility):
 
     def setup(self) -> None:
         """
+        Setup SSSD on the host.
+
+        - override systemd unit to disable burst limiting, otherwise we will be
+          unable to restart the service frequently
+        - reload systemd to apply change to the unit file
+        - load configuration from the host (if requested in constructor) or set
+          default configuration otherwise
+
         :meta private:
         """
-
         # Disable burst limiting to allow often sssd restarts for tests
         self.fs.mkdir('/etc/systemd/system/sssd.service.d')
         self.fs.write('/etc/systemd/system/sssd.service.d/override.conf', '''
@@ -129,7 +134,6 @@ class HostSSSD(MultihostUtility):
         :return: Remote command result.
         :rtype: RemoteCommandResult
         """
-
         if apply_config:
             self.config_apply(check_config=check_config)
 
@@ -148,7 +152,6 @@ class HostSSSD(MultihostUtility):
         :return: Remote command result.
         :rtype: RemoteCommandResult
         """
-
         return self.svc.stop(service, raise_on_error=raise_on_error, wait=wait)
 
     def restart(
@@ -191,7 +194,6 @@ class HostSSSD(MultihostUtility):
         :param logs: Remove logs, defaults to False
         :type logs: bool, optional
         """
-
         cmd = 'rm -fr'
 
         if db:
@@ -215,7 +217,6 @@ class HostSSSD(MultihostUtility):
         :type role: BaseRole
         :raises ValueError: If unsupported provider is given.
         """
-
         host = role.host
 
         if not isinstance(host, ProviderHost):
@@ -239,7 +240,6 @@ class HostSSSD(MultihostUtility):
         :return: SSSD configuration.
         :rtype: str
         """
-
         with StringIO() as ss:
             self.config.write(ss)
             ss.seek(0)
@@ -249,7 +249,6 @@ class HostSSSD(MultihostUtility):
         """
         Load remote SSSD configuration.
         """
-
         result = self.host.exec(['cat', '/etc/sssd/sssd.conf'], log_stdout=False)
         self.config.clear()
         self.config.read_string(result.stdout)
@@ -261,7 +260,6 @@ class HostSSSD(MultihostUtility):
         :param check_config: Check configuration for typos, defaults to True
         :type check_config: bool, optional
         """
-
         contents = self.config_dumps()
         self.fs.write('/etc/sssd/sssd.conf', contents, mode='0600')
 
@@ -277,7 +275,6 @@ class HostSSSD(MultihostUtility):
         :return: Section configuration object.
         :rtype: dict[str, str]
         """
-
         return self.__get(name)
 
     def dom(self, name: str) -> dict[str, str]:
@@ -289,7 +286,6 @@ class HostSSSD(MultihostUtility):
         :return: Section configuration object.
         :rtype: dict[str, str]
         """
-
         return self.section(f'domain/{name}')
 
     def subdom(self, domain: str, subdomain: str) -> dict[str, str]:
@@ -303,7 +299,6 @@ class HostSSSD(MultihostUtility):
         :return: Section configuration object.
         :rtype: dict[str, str]
         """
-
         return self.section(f'domain/{domain}/{subdomain}')
 
     @property

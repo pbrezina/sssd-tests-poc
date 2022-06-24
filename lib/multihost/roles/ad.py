@@ -1,33 +1,71 @@
 from __future__ import annotations
 
 import textwrap
-from enum import Enum, auto
 
 from ..command import RemoteCommandResult
 from .base import BaseObject, WindowsRole
 
 
 class AD(WindowsRole):
-    class Flags(Enum):
-        DELETE = auto()
+    """
+    AD service management.
+    """
 
     def setup(self) -> None:
+        """
+        Setup AD role.
+
+        #. backup AD data
+        """
         super().setup()
         self.host.backup()
 
     def teardown(self) -> None:
+        """
+        Teardown AD role.
+
+        #. restore original AD data
+        """
         self.host.restore()
         super().teardown()
 
     def user(self, name: str) -> ADUser:
+        """
+        Get user object.
+
+        :param name: User name.
+        :type name: str
+        :return: New user object.
+        :rtype: ADUser
+        """
         return ADUser(self, name)
 
     def group(self, name: str) -> ADGroup:
+        """
+        Get group object.
+
+        :param name: Group name.
+        :type name: str
+        :return: New group object.
+        :rtype: ADGroup
+        """
         return ADGroup(self, name)
 
 
 class ADObject(BaseObject):
+    """
+    Base AD object class.
+    """
+
     def __init__(self, role: AD, command_group: str, name: str) -> None:
+        """
+        :param role: AD role object.
+        :type role: AD
+        :param command_group: AD command group.
+        :type command_group: str
+        :param name: Object name.
+        :type name: str
+        """
         super().__init__(cli_prefix='-')
 
         self.role = role
@@ -48,9 +86,20 @@ class ADObject(BaseObject):
         self._exec('Set', self._build_args(attrs))
 
     def delete(self) -> None:
+        """
+        Delete object from AD.
+        """
         self._exec('Remove', self._build_args(self._identity))
 
     def get(self, attrs: list[str] | None = None) -> dict[str, list[str]]:
+        """
+        Get AD object attributes.
+
+        :param attrs: If set, only requested attributes are returned, defaults to None
+        :type attrs: list[str] | None, optional
+        :return: Dictionary with attribute name as a key.
+        :rtype: dict[str, list[str]]
+        """
         cmd = self._exec('Get', self._build_args(self._identity))
         return self._parse_attrs(cmd.stdout_lines, attrs)
 
@@ -65,12 +114,22 @@ class ADObject(BaseObject):
 
         return '@{' + out.rstrip(';') + '}'
 
-    def _build_args(self, attrs: dict[str, tuple[BaseObject.cli, any]], quote: bool = True):
-        return super()._build_args(attrs, quote=quote)
+    def _build_args(self, attrs: dict[str, tuple[BaseObject.cli, any]], as_script: bool = True):
+        return super()._build_args(attrs, as_script=as_script)
 
 
 class ADUser(ADObject):
+    """
+    AD user management.
+    """
+
     def __init__(self, role: AD, name: str) -> None:
+        """
+        :param role: AD role object.
+        :type role: AD
+        :param name: User name.
+        :type name: str
+        """
         super().__init__(role, 'user', name)
 
     def add(
@@ -83,6 +142,26 @@ class ADUser(ADObject):
         gecos: str | None = None,
         shell: str | None = None,
     ) -> ADUser:
+        """
+        Create new AD user.
+
+        Parameters that are not set are ignored.
+
+        :param uid: User id, defaults to None
+        :type uid: int | None, optional
+        :param gid: Primary group id, defaults to None
+        :type gid: int | None, optional
+        :param password: Password (cannot be None), defaults to 'Secret123'
+        :type password: str, optional
+        :param home: Home directory, defaults to None
+        :type home: str | None, optional
+        :param gecos: GECOS, defaults to None
+        :type gecos: str | None, optional
+        :param shell: Login shell, defaults to None
+        :type shell: str | None, optional
+        :return: Self.
+        :rtype: ADUser
+        """
         unix_attrs = {
             'uid': self.name,
             'uidNumber': uid,
@@ -111,6 +190,25 @@ class ADUser(ADObject):
         gecos: str | AD.Flags | None = None,
         shell: str | AD.Flags | None = None,
     ) -> ADUser:
+        """
+        Modify existing AD user.
+
+        Parameters that are not set are ignored. If needed, you can delete an
+        attribute by setting the value to ``AD.Flags.DELETE``.
+
+        :param uid: User id, defaults to None
+        :type uid: int | AD.Flags | None, optional
+        :param gid: Primary group id, defaults to None
+        :type gid: int | AD.Flags | None, optional
+        :param home: Home directory, defaults to None
+        :type home: str | AD.Flags | None, optional
+        :param gecos: GECOS, defaults to None
+        :type gecos: str | AD.Flags | None, optional
+        :param shell: Login shell, defaults to None
+        :type shell: str | AD.Flags | None, optional
+        :return: Self.
+        :rtype: ADUser
+        """
         unix_attrs = {
             'uidNumber': uid,
             'gidNumber': gid,
@@ -133,7 +231,17 @@ class ADUser(ADObject):
 
 
 class ADGroup(ADObject):
+    """
+    AD group management.
+    """
+
     def __init__(self, role: AD, name: str) -> None:
+        """
+        :param role: AD role object.
+        :type role: AD
+        :param name: Group name.
+        :type name: str
+        """
         super().__init__(role, 'group', name)
 
     def add(
@@ -144,6 +252,20 @@ class ADGroup(ADObject):
         scope: str = 'Global',
         category: str = 'Security',
     ) -> ADGroup:
+        """
+        Create new AD group.
+
+        :param gid: Group id, defaults to None
+        :type gid: int | None, optional
+        :param description: Description, defaults to None
+        :type description: str | None, optional
+        :param scope: Scope ('Global', 'Universal', 'DomainLocal'), defaults to 'Global'
+        :type scope: str, optional
+        :param category: Category ('Distribution', 'Security'), defaults to 'Security'
+        :type category: str, optional
+        :return: Self.
+        :rtype: ADGroup
+        """
         unix_attrs = {
             'gidNumber': gid,
             'description': description,
@@ -165,6 +287,19 @@ class ADGroup(ADObject):
         gid: int | AD.Flags | None = None,
         description: str | AD.Flags | None = None,
     ) -> ADUser:
+        """
+        Modify existing AD group.
+
+        Parameters that are not set are ignored. If needed, you can delete an
+        attribute by setting the value to ``AD.Flags.DELETE``.
+
+        :param gid: Group id, defaults to None
+        :type gid: int | AD.Flags | None, optional
+        :param description: Description, defaults to None
+        :type description: str | AD.Flags | None, optional
+        :return: Self.
+        :rtype: ADUser
+        """
         unix_attrs = {
             'gidNumber': gid,
             'description': description,
@@ -183,9 +318,25 @@ class ADGroup(ADObject):
         return self
 
     def add_member(self, member: ADUser | ADGroup) -> ADGroup:
+        """
+        Add group member.
+
+        :param member: User or group to add as a member.
+        :type member: ADUser | ADGroup
+        :return: Self.
+        :rtype: ADGroup
+        """
         return self.add_members([member])
 
     def add_members(self, members: list[ADUser | ADGroup]) -> ADGroup:
+        """
+        Add multiple group members.
+
+        :param member: List of users or groups to add as members.
+        :type member: list[ADUser | ADGroup]
+        :return: Self.
+        :rtype: ADGroup
+        """
         return self.role.host.exec(textwrap.dedent(f'''
             Import-Module ActiveDirectory
             Add-ADGroupMember -Identity '{self.name}' -Members '{self.__get_members(members)}'
@@ -193,9 +344,25 @@ class ADGroup(ADObject):
         return self
 
     def remove_member(self, member: ADUser | ADGroup) -> ADGroup:
+        """
+        Remove group member.
+
+        :param member: User or group to remove from the group.
+        :type member: ADUser | ADGroup
+        :return: Self.
+        :rtype: ADGroup
+        """
         return self.remove_members([member])
 
     def remove_members(self, members: list[ADUser | ADGroup]) -> ADGroup:
+        """
+        Remove multiple group members.
+
+        :param member: List of users or groups to remove from the group.
+        :type member: list[ADUser | ADGroup]
+        :return: Self.
+        :rtype: ADGroup
+        """
         return self.role.host.exec(textwrap.dedent(f'''
             Import-Module ActiveDirectory
             Remove-ADGroupMember -Identity '{self.name}' -Members '{self.__get_members(members)}'

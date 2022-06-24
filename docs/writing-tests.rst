@@ -266,6 +266,8 @@ The topology from previous examples is simply
     to define a new one inside :class:`lib.multihost.KnownTopology` and use
     the new entry so it can be reused later by other test when needed.
 
+.. _topology-parametrization:
+
 Topology parametrization
 ************************
 
@@ -350,3 +352,11 @@ second time with ``mockvalue=2``.
     tests/test_basic.py::test_example[2] (ipa) PASSED                                                                                                                                                                                  [ 87%]
     tests/test_basic.py::test_example[2] (ldap) PASSED
     ...
+
+.. seealso::
+
+    This article explained how to define a new test case and integrate it with
+    the multihost plugin in order to run tests that require access to multiple
+    machines, however it did not provide any information on how to actually run
+    commands on remote hosts. This is explained in articles in
+    :doc:`guides/index`, especially in :doc:`guides/using-roles`.

@@ -22,13 +22,18 @@ class MultihostUtility(object):
         :param host: Remote host instance.
         :type host: BaseHost
         """
-
         self.host = host
 
     def setup(self) -> None:
+        """
+        Setup object.
+        """
         pass
 
     def teardown(self) -> None:
+        """
+        Teardown object.
+        """
         pass
 
     @staticmethod
@@ -42,7 +47,6 @@ class MultihostUtility(object):
         :return: Dictionary {attribute name: value}
         :rtype: dict[str, MultihostUtility]
         """
-
         return dict(inspect.getmembers(o, lambda attr: isinstance(attr, MultihostUtility)))
 
     @classmethod
@@ -54,7 +58,6 @@ class MultihostUtility(object):
         :param o: Any object.
         :type o: object
         """
-
         for util in cls.GetUtilityAttributes(o).values():
             util.setup()
 
@@ -67,7 +70,6 @@ class MultihostUtility(object):
         :param o: Any object.
         :type o: object
         """
-
         errors = []
         for util in cls.GetUtilityAttributes(o).values():
             try:

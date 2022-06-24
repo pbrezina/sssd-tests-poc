@@ -64,21 +64,37 @@ use in the next examples.
     - name: test
       type: sssd
       hosts:
-      - name: client
-        external_hostname: client.test
+      - hostname: client.test
         role: client
 
-      - name: ldap
-        external_hostname: master.ldap.test
+      - hostname: master.ldap.test
         role: ldap
+        config:
+          binddn: cn=Directory Manager
+          bindpw: Secret123
+          client:
+            ldap_tls_reqcert: demand
+            ldap_tls_cacert: /data/certs/ca.crt
+            dns_discovery_domain: ldap.test
 
-      - name: ipa
-        external_hostname: master.ipa.test
+      - hostname: master.ipa.test
         role: ipa
+        config:
+          client:
+            ipa_domain: ipa.test
+            krb5_keytab: /enrollment/ipa.keytab
+            ldap_krb5_keytab: /enrollment/ipa.keytab
 
-      - name: samba
-        external_hostname: dc.samba.test
+      - hostname: dc.samba.test
         role: samba
+        config:
+          binddn: CN=Administrator,CN=Users,DC=samba,DC=test
+          bindpw: Secret123
+          client:
+            ad_domain: samba.test
+            krb5_keytab: /enrollment/samba.keytab
+            ldap_krb5_keytab: /enrollment/samba.keytab
+
 
 Running tests
 *************

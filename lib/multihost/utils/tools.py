@@ -18,12 +18,11 @@ class UnixObject(object):
         :param name: Object name.
         :type name: str | None
         """
-
         self.id = id
         self.name = name
 
     def __str__(self) -> str:
-        return f'({self.id},"{self.name})"'
+        return f'({self.id},"{self.name}")'
 
     def __repr__(self) -> str:
         return str(self)
@@ -81,7 +80,6 @@ class IdEntry(object):
         Secondary groups.
         """
 
-
     def memberof(self, groups: int | str | tuple(int, str) | list[int | str | tuple(int, str)]) -> bool:
         """
         Check if the user is member of give group(s).
@@ -95,7 +93,6 @@ class IdEntry(object):
         :return: _description_
         :rtype: bool
         """
-
         if isinstance(groups, (int, str, tuple)):
             return groups in self.groups
 
@@ -211,7 +208,6 @@ class HostTools(MultihostUtility):
         :param host: Remote host.
         :type host: BaseHost
         """
-
         super().__init__(host)
 
         self.getent: HostGetent = HostGetent(host)
@@ -228,7 +224,6 @@ class HostTools(MultihostUtility):
         :return: id data, None if not found
         :rtype: IdEntry | None
         """
-
         command = self.host.exec(['id', name], raise_on_error=False)
         if command.rc != 0:
             return None
@@ -268,7 +263,6 @@ class HostGetent(MultihostUtility):
         :return: group data, None if not found
         :rtype: PasswdEntry | None
         """
-
         return self.__exec(GroupEntry, 'group', name)
 
     def __exec(self, cls, cmd: str, name: str | int) -> any:

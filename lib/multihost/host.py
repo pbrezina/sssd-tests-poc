@@ -14,7 +14,6 @@ if TYPE_CHECKING:
     from .config import MultihostDomain
 
 
-
 class BaseHost(object):
     """
     Base host class that provides access to the remote host.
@@ -148,7 +147,6 @@ class BaseHost(object):
         :return: Command result, if ``wait`` is set to False, you need to call ``res.wait()``.
         :rtype: RemoteCommandResult
         """
-
         if not argv:
             raise ValueError('Parameter "argv" can not be empty.')
 
@@ -227,7 +225,6 @@ class ProviderHost(BaseHost):
         :param tls: Require TLS connection, defaults to True
         :type tls: bool, optional
         """
-
         super().__init__(host, config)
         self.client: dict[str, any] = config.get('client', {})
 
@@ -247,7 +244,6 @@ class ProviderHost(BaseHost):
 
         :rtype: ldap.ldapobject.LDAPObject
         """
-
         if not self.__conn:
             self.__conn = ldap.initialize(self.uri)
             self.__conn.protocol_version = ldap.VERSION3
@@ -269,7 +265,6 @@ class ProviderHost(BaseHost):
         :raises ValueError: If default naming context can not be obtained.
         :rtype: str
         """
-
         if not self.__naming_context:
             attr = 'defaultNamingContext'
             result = self.conn.search_s('', ldap.SCOPE_BASE, attrlist=[attr])
@@ -294,7 +289,6 @@ class ProviderHost(BaseHost):
         :return: Dictionary with distinguished name as key and attributes as value.
         :rtype: dict[str, dict[str, list[bytes]]]
         """
-
         return dict((dn, attrs) for dn, attrs in result if dn is not None)
 
 
@@ -323,7 +317,6 @@ class LDAPHost(ProviderHost):
         This is done by simple LDAP search on given base dn and remembering the
         contents. The operation is usually very fast.
         """
-
         if self.__backup is not None:
             return
 
@@ -344,7 +337,6 @@ class LDAPHost(ProviderHost):
         calling add, delete and modify operations to convert current state to
         the original state. This operation is usually very fast.
         """
-
         data = self.conn.search_s(self.naming_context, ldap.SCOPE_SUBTREE)
         config = self.conn.search_s('cn=config', ldap.SCOPE_BASE)
 
@@ -398,7 +390,6 @@ class IPAHost(ProviderHost):
         """
         Obtain ``admin`` user Kerberos TGT.
         """
-
         self.exec(['kinit', 'admin'], stdin=self.adminpw)
 
     def backup(self) -> None:
@@ -408,7 +399,6 @@ class IPAHost(ProviderHost):
         This is done by calling ``ipa-backup --data --online`` on the server
         and can take several seconds to finish.
         """
-
         if self.__backup is not None:
             return
 
@@ -423,7 +413,6 @@ class IPAHost(ProviderHost):
         This is done by calling ``ipa-restore --data --online`` on the server
         and can take several seconds to finish.
         """
-
         if self.__backup is None:
             return
 
@@ -457,7 +446,6 @@ class SambaHost(ProviderHost):
         This is done by creating a backup of Samba database. This operation
         is usually very fast.
         """
-
         if self.__backup is not None:
             return
 
@@ -477,7 +465,6 @@ class SambaHost(ProviderHost):
         This is done by overriding current database with the backup created
         by :func:`backup`. This operation is usually very fast.
         """
-
         if self.__backup is None:
             return
 
@@ -605,7 +592,6 @@ class ADHost(ProviderHost):
         This is done by performing simple LDAP search on the base dn. This
         operation is usually very fast.
         """
-
         if self.__backup is not None:
             return
 
@@ -620,7 +606,6 @@ class ADHost(ProviderHost):
         ``cn=users,$default_naming_context`` that are not present in the
         original state.
         """
-
         # Currently, only users container is supported.
         data = self.conn.search_s('cn=users,' + self.naming_context, ldap.SCOPE_SUBTREE)
 
