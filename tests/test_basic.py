@@ -228,3 +228,22 @@ def test_ad_id(client: Client, ad: AD):
     g.add_member(u)
 
     assert True
+
+
+@pytest.mark.topology(KnownTopology.LDAP)
+@pytest.mark.parametrize('method', ['su', 'ssh'])
+def test_auth(client: Client, ldap: LDAP, method: str):
+    auth_tool = client.auth.su if method == 'su' else client.auth.ssh
+    ldap.user('test').add(password="Secret123")
+
+    client.sssd.start()
+    assert auth_tool.password('test', 'Secret123')
+
+@pytest.mark.topology(KnownTopology.LDAP)
+def test_sudo(client: Client, ldap: LDAP):
+    u = ldap.user('test').add(password="Secret123")
+    ldap.sudorule('testrule').add(user=u, host='ALL', command='ALL')
+    client.authselect.select('sssd', ['with-sudo'])
+    client.sssd.enable_responder('sudo')
+    client.sssd.start()
+    assert client.auth.sudo.list(u.name, 'Secret123')

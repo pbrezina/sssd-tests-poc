@@ -250,7 +250,7 @@ class ProviderHost(BaseHost):
             self.__conn.set_option(ldap.OPT_REFERRALS, 0)
 
             if self.tls:
-                self.__conn.set_option(ldap.OPT_X_TLS, ldap.OPT_X_TLS_DEMAND)
+                self.__conn.set_option(ldap.OPT_X_TLS_REQUIRE_CERT, ldap.OPT_X_TLS_DEMAND)
                 self.__conn.start_tls_s()
 
             self.__conn.simple_bind_s(self.binddn, self.bindpw)

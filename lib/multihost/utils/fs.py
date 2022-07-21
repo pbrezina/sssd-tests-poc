@@ -61,6 +61,41 @@ class HostFileSystem(MultihostUtility):
 
         self.__rollback.append(f"rm -fr '{path}'")
 
+    def mktmp(self, *, mode: str = None, user: str = None, group: str = None) -> str:
+        """
+        Create temporary file on remote host.
+
+        :param mode: Access mode (chmod value), defaults to None
+        :type mode: str, optional
+        :param user: Owner, defaults to None
+        :type user: str, optional
+        :param group: Group, defaults to None
+        :type group: str, optional
+        :raises OSError: If the file can not be created.
+        :return: Temporary file path.
+        :rtype: str
+        """
+
+        cmd = f'''
+        set -x
+
+        tmp=`mktemp /tmp/mh.fs.rollback.XXXXXXXXX`
+        echo $tmp
+        '''
+
+        result = self.host.exec(cmd, raise_on_error=False)
+        if result.rc != 0:
+            raise OSError(result.stderr)
+
+        tmpfile = result.stdout.strip()
+        if not tmpfile:
+            raise OSError("Temporary file was not created")
+
+        self.__rollback.append(f"rm -fr '{tmpfile}'")
+        result = self.host.exec(self.__gen_chattrs(tmpfile, mode=mode, user=user, group=group), raise_on_error=False)
+
+        return tmpfile
+
     def read(self, path: str) -> str:
         """
         Read remote file and return its contents.
@@ -139,7 +174,7 @@ class HostFileSystem(MultihostUtility):
         :param local_path: Local path.
         :type local_path: str
         """
-        result = self.host.exec(['base64', remote_path])
+        result = self.host.exec(['base64', remote_path], log_stdout=False)
         with open(local_path, 'wb') as f:
             f.write(base64.b64decode(result.stdout))
 
@@ -159,7 +194,7 @@ class HostFileSystem(MultihostUtility):
             tar -czvf "$tmp" {' '.join([f'$(compgen -G "{path}")' for path in paths])} &> /dev/null
             base64 "$tmp"
             rm -f "$tmp" &> /dev/null
-        ''')
+        ''', log_stdout=False)
 
         with open(local_path, 'wb') as f:
             f.write(base64.b64decode(result.stdout))

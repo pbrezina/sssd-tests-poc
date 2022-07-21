@@ -50,6 +50,17 @@ class IPA(LinuxRole):
         """
         return IPAGroup(self, name)
 
+    def sudorule(self, name: str) -> IPASudoRule:
+        """
+        Get sudo rule object.
+
+        :param name: Sudo rule name.
+        :type name: str
+        :return: New sudo rule object.
+        :rtype: IPASudoRule
+        """
+        return IPASudoRule(self, name)
+
 
 class IPAObject(BaseObject):
     """
@@ -325,3 +336,92 @@ class IPAGroup(IPAObject):
         users = [x for item in members if isinstance(item, IPAUser) for x in ('--users', item.name)]
         groups = [x for item in members if isinstance(item, IPAGroup) for x in ('--groups', item.name)]
         return [*users, *groups]
+
+
+class IPASudoRule(IPAObject):
+    """
+    IPA sudo rule management.
+    """
+
+    def __init__(self, role: IPA, name: str) -> None:
+        """
+        :param role: IPA role object.
+        :type role: IPA
+        :param name: Sudo rule name.
+        :type name: str
+        """
+        super().__init__(role, 'group', name)
+
+    def add(
+        self,
+        *,
+        user: int | str | LDAPUser | LDAPGroup | list[int | str | LDAPUser | LDAPGroup] | None = None,
+        host: str | list[str] | None = None,
+        command: str | list[str] | None = None,
+        option: str | list[str] | None = None,
+        runasuser: int | str | LDAPUser | LDAPGroup | list[int | str | LDAPUser | LDAPGroup] | None = None,
+        runasgroup: int | str | LDAPGroup | list[int | str | LDAPGroup] | None = None,
+        notbefore: str | list[str] | None = None,
+        notafter: str | list[str] | None = None,
+        order: int | list[int] | None = None,
+        nopasswd: bool | None = None
+    ) -> LDAPSudoRule:
+        """
+        Create new IPA group.
+
+        Parameters that are not set are ignored.
+
+        :param gid: Group id, defaults to None
+        :type gid: int | None, optional
+        :param description: Description, defaults to None
+        :type description: str | None, optional
+        :param nonposix: Group is non-posix group, defaults to False
+        :type nonposix: bool, optional
+        :param external: Group is external group, defaults to False
+        :type external: bool, optional
+        :return: Self.
+        :rtype: IPAGroup
+        """
+        attrs = {
+            'gid': (self.cli.VALUE, gid),
+            'desc': (self.cli.VALUE, description),
+            'nonposix': (self.cli.SWITCH, True) if nonposix else None,
+            'external': (self.cli.SWITCH, True) if external else None,
+        }
+
+        self._add(attrs)
+        return self
+
+    def modify(
+        self,
+        *,
+        user: int | str | LDAPUser | LDAPGroup | list[int | str | LDAPUser | LDAPGroup] | LDAP.Flags | None = None,
+        host: str | list[str] | LDAP.Flags | None = None,
+        command: str | list[str] | LDAP.Flags | None = None,
+        option: str | list[str] | LDAP.Flags | None = None,
+        runasuser: int | str | LDAPUser | LDAPGroup | list[int | str | LDAPUser | LDAPGroup] | LDAP.Flags | None = None,
+        runasgroup: int | str | LDAPGroup | list[int | str | LDAPGroup] | LDAP.Flags | None = None,
+        notbefore: str | list[str] | LDAP.Flags | None = None,
+        notafter: str | list[str] | LDAP.Flags | None = None,
+        order: int | list[int] | LDAP.Flags | None = None,
+        nopasswd: bool | None = None
+    ) -> LDAPSudoRule:
+        """
+        Modify existing IPA group.
+
+        Parameters that are not set are ignored.
+
+        :param gid: Group id, defaults to None
+        :type gid: int | None, optional
+        :param description: Description, defaults to None
+        :type description: str | None, optional
+        :return: Self.
+        :rtype: IPAGroup
+        """
+        attrs = {
+            'gid': (self.cli.VALUE, gid),
+            'desc': (self.cli.VALUE, description),
+        }
+
+        self._modify(attrs)
+        return self

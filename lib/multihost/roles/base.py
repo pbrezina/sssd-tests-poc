@@ -5,10 +5,12 @@ from enum import Enum, auto
 from typing import TYPE_CHECKING
 
 from ..host import BaseHost
+from ..utils.auth import HostAuthentication
 from ..utils.authselect import HostAuthselect
 from ..utils.base import MultihostUtility
 from ..utils.fs import HostFileSystem
 from ..utils.service import HostService
+from ..utils.tools import HostTools
 
 if TYPE_CHECKING:
     from ..multihost import Multihost
@@ -187,6 +189,21 @@ class BaseObject(object):
 
         return out
 
+    def _include_attr_value(self, attr: any | list[any], value: any) -> list[any]:
+        if attr is None:
+            return [value]
+
+        if not isinstance(attr, list):
+            if attr != value:
+                return [attr, value]
+
+            return [attr]
+
+        if not value in attr:
+            return [*attr, value]
+
+        return attr
+
 
 class LinuxRole(BaseRole):
     """
@@ -209,6 +226,16 @@ class LinuxRole(BaseRole):
         self.svc: HostService = HostService(host)
         """
         Systemd service management.
+        """
+
+        self.tools: HostTools = HostTools(host)
+        """
+        Standard tools interface.
+        """
+
+        self.auth: HostAuthentication = HostAuthentication(host)
+        """
+        Authentication helpers.
         """
 
     def collect_artifacts(self) -> None:

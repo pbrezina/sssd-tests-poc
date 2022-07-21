@@ -238,6 +238,20 @@ class LDAP(LinuxRole):
 
         return LDAPGroup(self, name, basedn, rfc2307bis=rfc2307bis)
 
+    def sudorule(self, name: str, basedn: LDAPObject | str | None = None) -> LDAPSudoRule:
+        """
+        Get sudo rule object.
+
+        :param name: Rule name.
+        :type name: str
+        :param basedn: Base dn, defaults to None
+        :type basedn: LDAPObject | str | None, optional
+        :return: New sudo rule object.
+        :rtype: LDAPSudoRule
+        """
+
+        return LDAPSudoRule(self, name, basedn)
+
 
 class LDAPObject(BaseObject):
     def __init__(self, role: LDAP, rdn: str, basedn: LDAPObject | str | None = None) -> None:
@@ -505,7 +519,7 @@ class LDAPGroup(LDAPObject):
         """
         :param role: LDAP role object.
         :type role: LDAP
-        :param name: Unit name.
+        :param name: Group name.
         :type name: str
         :param basedn: Base dn, defaults to None
         :type basedn: LDAPObject | str | None, optional
@@ -654,3 +668,212 @@ class LDAPGroup(LDAPObject):
         """
         self._modify(delete={self.member_attr: self.__members(members)})
         return self
+
+
+class LDAPSudoRule(LDAPObject):
+    """
+    LDAP sudo rule management.
+    """
+
+    def __init__(
+        self,
+        role: LDAP,
+        name: str,
+        basedn: LDAPObject | str | None = None,
+    ) -> None:
+        """
+        :param role: LDAP role object.
+        :type role: LDAP
+        :param name: Sudo rule name.
+        :type name: str
+        :param basedn: Base dn, defaults to None
+        :type basedn: LDAPObject | str | None, optional
+        """
+        super().__init__(role, f'cn={name}', basedn)
+        self.name = name
+
+    def add(
+        self,
+        *,
+        user: int | str | LDAPUser | LDAPGroup | list[int | str | LDAPUser | LDAPGroup] | None = None,
+        host: str | list[str] | None = None,
+        command: str | list[str] | None = None,
+        option: str | list[str] | None = None,
+        runasuser: int | str | LDAPUser | LDAPGroup | list[int | str | LDAPUser | LDAPGroup] | None = None,
+        runasgroup: int | str | LDAPGroup | list[int | str | LDAPGroup] | None = None,
+        notbefore: str | list[str] | None = None,
+        notafter: str | list[str] | None = None,
+        order: int | list[int] | None = None,
+        nopasswd: bool | None = None
+    ) -> LDAPSudoRule:
+        """
+        Create new sudo rule.
+
+        :param user: sudoUser attribute, defaults to 'ALL'
+        :type user: int | str | LDAPUser | LDAPGroup | list[int  |  str  |  LDAPUser  |  LDAPGroup], optional
+        :param host: sudoHost attribute, defaults to 'ALL'
+        :type host: str | list[str], optional
+        :param command: sudoCommand attribute, defaults to 'ALL'
+        :type command: str | list[str], optional
+        :param option: sudoOption attribute, defaults to None
+        :type option: str | list[str] | None, optional
+        :param runasuser: sudoRunAsUser attribute, defaults to None
+        :type runasuser: int | str | LDAPUser | LDAPGroup | list[int  |  str  |  LDAPUser  |  LDAPGroup] | None, optional
+        :param runasgroup: sudoRunAsGroup attribute, defaults to None
+        :type runasgroup: int | str | LDAPGroup | list[int  |  str  |  LDAPGroup] | None, optional
+        :param notbefore: sudoNotBefore attribute, defaults to None
+        :type notbefore: str | list[str] | None, optional
+        :param notafter: sudoNotAfter attribute, defaults to None
+        :type notafter: str | list[str] | None, optional
+        :param order: sudoOrder attribute, defaults to None
+        :type order: int | list[int] | None, optional
+        :param nopasswd: If true, no authentication is required (NOPASSWD), defaults to None (no change)
+        :type nopasswd: bool | None, optional
+        :return: Self.
+        :rtype: LDAPSudoRule
+        """
+        attrs = {
+            'objectClass': 'sudoRole',
+            'cn': self.name,
+            'sudoUser': self.__sudo_user(user),
+            'sudoHost': host,
+            'sudoCommand': command,
+            'sudoOption': option,
+            'sudoRunAsUser': self.__sudo_user(runasuser),
+            'sudoRunAsGroup': self.__sudo_group(runasgroup),
+            'sudoNotBefore': notbefore,
+            'sudoNotAfter': notafter,
+            'sudoOrder': order,
+        }
+
+        if nopasswd is True:
+            attrs['sudoOption'] = self._include_attr_value(attrs['sudoOption'], '!authenticate')
+        elif nopasswd is False:
+            attrs['sudoOption'] = self._include_attr_value(attrs['sudoOption'], 'authenticate')
+
+        self._add(attrs)
+        return self
+
+    def modify(
+        self,
+        *,
+        user: int | str | LDAPUser | LDAPGroup | list[int | str | LDAPUser | LDAPGroup] | LDAP.Flags | None = None,
+        host: str | list[str] | LDAP.Flags | None = None,
+        command: str | list[str] | LDAP.Flags | None = None,
+        option: str | list[str] | LDAP.Flags | None = None,
+        runasuser: int | str | LDAPUser | LDAPGroup | list[int | str | LDAPUser | LDAPGroup] | LDAP.Flags | None = None,
+        runasgroup: int | str | LDAPGroup | list[int | str | LDAPGroup] | LDAP.Flags | None = None,
+        notbefore: str | list[str] | LDAP.Flags | None = None,
+        notafter: str | list[str] | LDAP.Flags | None = None,
+        order: int | list[int] | LDAP.Flags | None = None,
+        nopasswd: bool | None = None
+    ) -> LDAPSudoRule:
+        """
+        Modify existing sudo rule.
+
+        Parameters that are not set are ignored. If needed, you can delete an
+        attribute by setting the value to ``LDAP.Flags.DELETE``.
+
+        :param user: sudoUser attribute, defaults to None
+        :type user: int | str | LDAPUser | LDAPGroup | list[int  |  str  |  LDAPUser  |  LDAPGroup] | LDAP.Flags | None, optional
+        :param host: sudoHost attribute, defaults to None
+        :type host: str | list[str] | LDAP.Flags | None, optional
+        :param command: sudoCommand attribute, defaults to None
+        :type command: str | list[str] | LDAP.Flags | None, optional
+        :param option: sudoOption attribute, defaults to None
+        :type option: str | list[str] | LDAP.Flags | None, optional
+        :param runasuser: sudoRunAsUsere attribute, defaults to None
+        :type runasuser: int | str | LDAPUser | LDAPGroup | list[int  |  str  |  LDAPUser  |  LDAPGroup] | LDAP.Flags | None, optional
+        :param runasgroup: sudoRunAsGroup attribute, defaults to None
+        :type runasgroup: int | str | LDAPGroup | list[int  |  str  |  LDAPGroup] | LDAP.Flags | None, optional
+        :param notbefore: sudoNotBefore attribute, defaults to None
+        :type notbefore: str | list[str] | LDAP.Flags | None, optional
+        :param notafter: sudoNotAfter attribute, defaults to None
+        :type notafter: str | list[str] | LDAP.Flags | None, optional
+        :param order: sudoOrder attribute, defaults to None
+        :type order: int | list[int] | LDAP.Flags | None, optional
+        :param nopasswd: If true, no authentication is required (NOPASSWD), defaults to None (no change)
+        :type nopasswd: bool | None, optional
+        :return: Self.
+        :rtype: LDAPSudoRule
+        """
+        attrs = {
+            'objectClass': 'sudoRole',
+            'cn': self.name,
+            'sudoUser': self.__sudo_user(user),
+            'sudoHost': host,
+            'sudoCommand': command,
+            'sudoOption': option,
+            'sudoRunAsUser': self.__sudo_user(runasuser),
+            'sudoRunAsGroup': self.__sudo_group(runasgroup),
+            'sudoNotBefore': notbefore,
+            'sudoNotAfter': notafter,
+            'sudoOrder': order,
+        }
+
+        if nopasswd is True:
+            attrs['sudoOption'] = self._include_attr_value(attrs['sudoOption'], '!authenticate')
+        elif nopasswd is False:
+            attrs['sudoOption'] = self._include_attr_value(attrs['sudoOption'], 'authenticate')
+
+        self._set(attrs)
+        return self
+
+    def __sudo_user(self, sudo_user: None | LDAP.Flags | str | LDAPUser | LDAPGroup | list[str | LDAPUser | LDAPGroup]) -> list[str]:
+        def _get_value(value: str | LDAPUser | LDAPGroup):
+            if isinstance(value, LDAPUser):
+                return value.name
+
+            if isinstance(value, LDAPGroup):
+                return '%' + value.name
+
+            if isinstance(value, str):
+                return value
+
+            if isinstance(value, int):
+                return '#' + str(value)
+
+            raise ValueError(f'Unsupported type: {type(value)}')
+
+        if sudo_user is None:
+            return None
+
+        if isinstance(sudo_user, LDAP.Flags):
+            return sudo_user
+
+        if not isinstance(sudo_user, list):
+            return [_get_value(sudo_user)]
+
+        out = []
+        for value in sudo_user:
+            out.append(_get_value(value))
+
+        return out
+
+    def __sudo_group(self, sudo_group: None | LDAP.Flags | str | LDAPGroup | list[str | LDAPGroup]) -> list[str]:
+        def _get_value(value: str | LDAPUser | LDAPGroup):
+            if isinstance(value, LDAPGroup):
+                return value.name
+
+            if isinstance(value, str):
+                return value
+
+            if isinstance(value, int):
+                return '#' + str(value)
+
+            raise ValueError(f'Unsupported type: {type(value)}')
+
+        if sudo_group is None:
+            return None
+
+        if isinstance(sudo_group, LDAP.Flags):
+            return sudo_group
+
+        if not isinstance(sudo_group, list):
+            return [_get_value(sudo_group)]
+
+        out = []
+        for value in sudo_group:
+            out.append(_get_value(value))
+
+        return out

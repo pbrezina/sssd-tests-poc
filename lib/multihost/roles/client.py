@@ -4,7 +4,6 @@ from typing import TYPE_CHECKING
 
 from ..host import BaseHost
 from ..utils.sssd import HostSSSD
-from ..utils.tools import HostTools
 from .base import LinuxRole
 
 if TYPE_CHECKING:
@@ -17,11 +16,6 @@ class Client(LinuxRole):
         self.sssd: HostSSSD = HostSSSD(host, self.fs, self.svc, load_config=False)
         """
         SSSD management.
-        """
-
-        self.tools: HostTools = HostTools(host)
-        """
-        Standard tools interface.
         """
 
     def setup(self) -> None:

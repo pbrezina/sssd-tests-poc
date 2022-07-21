@@ -30,54 +30,6 @@ class HostSSSD(MultihostUtility):
         self.default_domain = None
         self.__load_config = load_config
 
-        # Shortcuts for responders
-        def create_property(name: str) -> dict[str, str]:
-            return property(
-                fget=partial(self.__get, name),
-                fset=partial(self.__set, name),
-                fdel=partial(self.__del, name)
-            )
-
-        self.autofs = create_property('autofs')
-        """
-        Configuration of autofs responder.
-        """
-
-        self.ifp = create_property('ifp')
-        """
-        Configuration of ifp responder.
-        """
-
-        self.kcm = create_property('kcm')
-        """
-        Configuration of kcm responder.
-        """
-
-        self.nss = create_property('nss')
-        """
-        Configuration of nss responder.
-        """
-
-        self.pac = create_property('pac')
-        """
-        Configuration of pac responder.
-        """
-
-        self.pam = create_property('pam')
-        """
-        Configuration of pam responder.
-        """
-
-        self.ssh = create_property('ssh')
-        """
-        Configuration of ssh responder.
-        """
-
-        self.sudo = create_property('sudo')
-        """
-        Configuration of sudo responder.
-        """
-
     def setup(self) -> None:
         """
         Setup SSSD on the host.
@@ -215,6 +167,19 @@ class HostSSSD(MultihostUtility):
 
         self.host.exec('rm -fr /var/lib/sss/db/* /var/log/sssd/*')
 
+    def enable_responder(self, responder: str) -> None:
+        """
+        Include the responder in the [sssd]/service option.
+
+        :param responder: Responder to enable.
+        :type responder: str
+        """
+        self.config.setdefault('sssd', {})
+        svc = self.config['sssd'].get('services', '')
+        if not responder in svc:
+            self.config['sssd']['services'] += ', ' + responder
+            self.config['sssd']['services'].lstrip(', ')
+
     def import_domain(self, name: str, role: BaseRole) -> None:
         """
         Import SSSD domain from role object.
@@ -348,6 +313,87 @@ class HostSSSD(MultihostUtility):
 
     def __del(self, section: str) -> None:
         del self.config[section]
+
+    sssd: dict[str, str] = property(
+        fget=partial(__get, section='sssd'),
+        fset=partial(__set, section='sssd'),
+        fdel=partial(__del, section='sssd')
+    )
+    """
+    Configuration of the sssd section.
+    """
+
+    autofs: dict[str, str] = property(
+        fget=partial(__get, section='autofs'),
+        fset=partial(__set, section='autofs'),
+        fdel=partial(__del, section='autofs')
+    )
+    """
+    Configuration of autofs responder.
+    """
+
+    ifp: dict[str, str] = property(
+        fget=partial(__get, section='ifp'),
+        fset=partial(__set, section='ifp'),
+        fdel=partial(__del, section='ifp')
+    )
+    """
+    Configuration of ifp responder.
+    """
+
+    kcm: dict[str, str] = property(
+        fget=partial(__get, section='kcm'),
+        fset=partial(__set, section='kcm'),
+        fdel=partial(__del, section='kcm')
+    )
+    """
+    Configuration of kcm responder.
+    """
+
+    nss: dict[str, str] = property(
+        fget=partial(__get, section='nss'),
+        fset=partial(__set, section='nss'),
+        fdel=partial(__del, section='nss')
+    )
+    """
+    Configuration of nss responder.
+    """
+
+    pac: dict[str, str] = property(
+        fget=partial(__get, section='pac'),
+        fset=partial(__set, section='pac'),
+        fdel=partial(__del, section='pac')
+    )
+    """
+    Configuration of pac responder.
+    """
+
+    pam: dict[str, str] = property(
+        fget=partial(__get, section='pam'),
+        fset=partial(__set, section='pam'),
+        fdel=partial(__del, section='pam')
+    )
+    """
+    Configuration of pam responder.
+    """
+
+    ssh: dict[str, str] = property(
+        fget=partial(__get, section='ssh'),
+        fset=partial(__set, section='ssh'),
+        fdel=partial(__del, section='ssh')
+    )
+    """
+    Configuration of ssh responder.
+    """
+
+    sudo: dict[str, str] = property(
+        fget=partial(__get, section='sudo'),
+        fset=partial(__set, section='sudo'),
+        fdel=partial(__del, section='sudo')
+    )
+    """
+    Configuration of sudo responder.
+    """
 
     def __config_dumps(self, cfg: configparser) -> str:
         """ Convert configparser to string. """

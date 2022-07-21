@@ -230,6 +230,18 @@ class HostTools(MultihostUtility):
 
         return IdEntry.FromOutput(command.stdout)
 
+    def expect(self, script: str) -> int:
+        """
+        Execute expect script and return its return code.
+
+        :param script: Expect script.
+        :type script: str
+        :return: Return code.
+        :rtype: int
+        """
+        result = self.host.exec('/bin/expect', stdin=script, raise_on_error=False)
+        return result.rc
+
 
 class HostGetent(MultihostUtility):
     """
